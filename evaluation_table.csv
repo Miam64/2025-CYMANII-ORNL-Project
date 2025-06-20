@@ -1,0 +1,6 @@
+Test Case,Model Output
+Synthetic Normal run,Anomaly
+Abnormal run,Anomaly
+Replay attack,Anomaly
+Tampering - Inject 1s,Anomaly
+DoS - Constant 0s,Normal
