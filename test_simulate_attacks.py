@@ -5,6 +5,7 @@ from datetime import datetime
 import numpy as np
 import joblib
 import os
+from scipy.stats import skew, kurtosis
 
 # === Load your trained model and scaler ===
 model, scaler = joblib.load("test_isolation_forest_model.pkl")  # adjust path if needed
@@ -15,13 +16,26 @@ def extract_features(data, window_size=10):
     for i in range(0, len(data), window_size):
         window = data[i:i+window_size]
         values = [v for t, v in window]
+
         count_ones = sum(values)
         mean_val = np.mean(values)
         std_val = np.std(values)
         max_val = np.max(values)
         min_val = np.min(values)
-        features.append([count_ones, mean_val, std_val, max_val, min_val])
+
+        # Handle flat values to avoid precision warnings
+        if std_val < 1e-6:
+            skewness = 0
+            kurt = 0
+        else:
+            skewness = skew(values)
+            kurt = kurtosis(values)
+
+        zero_run = sum(1 for j in range(1, len(values)) if values[j-1] == 1 and values[j] == 0)
+
+        features.append([count_ones, mean_val, std_val, max_val, min_val, skewness, kurt, zero_run])
     return features
+
 
 # === Load CSV file ===
 def load_csv(path):
@@ -58,9 +72,8 @@ if __name__ == "__main__":
     results = []
 
     # Load datasets - update paths as needed
-    synthetic_data = load_csv("simulated_vibration_log_20250617_100750.csv")
-    abnormal_data = load_csv("abnormal_vibration_log_20250617_100907.csv")
-
+    synthetic_data = load_csv("simulated_vibration_log_20.csv")
+    abnormal_data = load_csv("abnormal_vibration_log_5.csv")
     # Scenario 1: Synthetic Normal run
     results.append(evaluate_scenario(synthetic_data, "Synthetic Normal run"))
 
